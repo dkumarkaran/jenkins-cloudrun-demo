@@ -10,7 +10,7 @@ resource "google_cloud_run_service" "default" {
   template {
     spec {
       containers {
-        image = "gcr.io/ce-ps-3team/karan-demo:v10"
+        image = "gcr.io/ce-ps-3team/karan-demo:${var.tags}"
         ports {
           container_port = 80
         }
@@ -23,3 +23,6 @@ resource "google_cloud_run_service" "default" {
     latest_revision = true
   }
 }
+variable "tags" {
+  type= string   
+}    
