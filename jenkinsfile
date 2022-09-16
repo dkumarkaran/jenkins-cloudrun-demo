@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Hello CICD') {
+            steps {
+                echo 'Hello everyone from Jenkins'
+            }
+        }
+        stage('git clone'){
+            steps {
+                git branch: 'main', url: 'https://github.com/dkumarkaran/jenkins-cloudrun-demo.git'
+            }
+        }
+        stage('docker build stage and docker push stage'){
+            steps {
+                echo 'Authentication stage for push to GCR'
+                sh 'gcloud auth activate-service-account karan-service-account@ce-ps-3team.iam.gserviceaccount.com --key-file=/home/d_kumarkaran/karan.json'
+                sh 'gcloud auth configure-docker'
+                sh 'sudo docker build . -t gcr.io/ce-ps-3team/karan-demo:v$BUILD_NUMBER'
+                sh 'sudo docker push gcr.io/ce-ps-3team/karan-demo:v$BUILD_NUMBER'
+            }
+        }
+        stage('email notification step to admin for approval and build information.') {
+            steps {
+                echo "Hello world"
+                emailext to: "d.kumarkaran@searce.com",
+                subject: "test mail $BUILD_NUMBER",
+                body: "build number : $BUILD_NUMBER \n $BUILD_URL \n Approve or decline the build from console."
+            }
+        }
+        stage('QA Team certification') {
+            steps{
+                input "Deploy to prod?"    
+            }
+        }
+        stage("updating the service of cloud run"){
+            steps{
+                echo 'updating the service of cloud run with latest image using terraform'
+                sh 'terraform init'
+                sh 'terraform plan -var tags="v$BUILD_NUMBER"'
+                sh 'terraform apply --auto-approve -var tags="v$BUILD_NUMBER"'
+            }
+        }
+
+    }
+
+}
